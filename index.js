@@ -29,7 +29,7 @@ app.get('/posts/:id', (req, res) => {   // se utiliza algún parámetro para ind
 
     if(!post){
         return res.status(404).json({
-            msg: 'Post no encontrado'
+            msg: 'Post no encontrado, intenta de nuevo'
         })
     }
 
