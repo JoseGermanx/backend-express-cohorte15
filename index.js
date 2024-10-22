@@ -3,9 +3,11 @@
 const express = require('express'); // importamos el paquete
 const morgan = require('morgan');
 const app = express() // creamos la instancia
+const cors = require('cors');
 const port = 3000
 
 // middlewares globales
+app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
@@ -14,6 +16,47 @@ app.use(express.json());
 let posts = [] // base de datos simulada en memoria
 
 // necesidad endpoints y sus respectivos métodos
+
+
+
+// endponit para gestionar una petición de procesamiento de pago
+// se puedan almacenar los datos resultantes de la transacción { idTransaccion, monto, resultado, idUsuario} ----> Se lo envian a servicios de almacenamiento de datos por medio de un endpoint
+
+//los reciben desde el cliente -- > sitio web como OTA
+app.post("/checkout", (req, res) => {
+    const { idSession, monto, idUsuario } = req.body
+
+    if( !idSession || !monto || !idUsuario ){
+        return res.status(400).json({
+            msg: 'Faltan datos requeridos'
+        })
+    }
+
+    const newPayment = {
+        idSession,
+        monto,
+        idUsuario
+    }
+    
+        // conectarse a los métodos del SDK de transbank
+
+        newPayment.resultado = "Aprobado"
+
+
+    // { idTransaccion, monto, resultado, idUsuario}
+    // se puedan almacenar los datos resultantes de la transacción acenamiento de datos por medio de un endpoint -- > equipo 2
+    // perticion POST a un endpoint - axios -- > hacer perticiones HTTP
+
+    // lógica para almacenar datos ---> depende de cada base de datos
+
+    res.status(201).json({
+        msg: 'Pago procesado correctamente',
+        newPayment
+    })
+})
+
+
+
 
 // ruta para listar u obtener todos los posts READ --> GET
 app.get('/posts', (req, res) => {
@@ -48,14 +91,15 @@ app.post('/posts', (req, res) => {
         id: posts.length + 1,
         title,
         content
-    }
+    }   
+
     posts.push(newPost);
     res.status(201).json({
         msg: 'Post creado correctamente',
         post: newPost
     });
 
-} )
+})
 
 
 // ruta para actualizar un post existente UPDATE --> PUT Se utiliza algún parámetro para indentificar el elemento
