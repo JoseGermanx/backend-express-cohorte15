@@ -10,7 +10,7 @@ const port = 3000;
 // Conexión a MongoDB usando Mongoose
 mongoose.connect('mongodb://localhost:27017/postsDB')
 .then(() => console.log('Conectado a MongoDB'))
-.catch((error) => console.error('Error al conectarse a MongoDB', error));
+.catch((error) => console.error('Error al conectarse a MongoDB. Intente de nuevo', error));
 
 // Definición del esquema de Mongoose para los posts
 const postSchema = new mongoose.Schema({
