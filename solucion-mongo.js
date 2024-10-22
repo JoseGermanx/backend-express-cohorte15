@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 const port = 3000;
+
 
 // Conexión a MongoDB usando Mongoose
 mongoose.connect('mongodb://localhost:27017/postsDB')
