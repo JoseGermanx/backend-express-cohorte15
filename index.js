@@ -4,7 +4,7 @@ const express = require('express'); // importamos el paquete
 const morgan = require('morgan');
 const app = express() // creamos la instancia
 const cors = require('cors');
-const port = 3000
+const port = process.env.PORT || 3000
 
 // middlewares globales
 app.use(cors());
