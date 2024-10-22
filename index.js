@@ -34,7 +34,7 @@ app.get('/posts/:id', (req, res) => {   // se utiliza algún parámetro para ind
     }
 
     res.status(200).json({
-        msg: 'Post encontrado',
+        msg: 'Post encontrado, intente de nuevo',
         post
     })
 
