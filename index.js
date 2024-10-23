@@ -1,117 +1,190 @@
-
+require("dotenv").config();
 // commonjs
-const express = require('express'); // importamos el paquete
-const morgan = require('morgan');
-const app = express() // creamos la instancia
-const cors = require('cors');
-const port = process.env.PORT || 3000
+const express = require("express"); // importamos el paquete
+const morgan = require("morgan");
+const app = express(); // creamos la instancia
+const cors = require("cors");
+const mongoose = require("mongoose");
+const port = process.env.PORT || 3000;
+
+// conexión a mongoDB por medio de mongoose
+mongoose
+  .connect(process.env.URI_MONGO) // devuelve una promesa
+  .then(() => console.log("Conexión exitosa a la base de datos")) // ok
+  .catch((error) =>
+    console.log("Error al conectar a la base de datos: ", error)
+  ); // not ok
+
+// primer paso crear un esquema de datos ---> Schema
+
+const postSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+});
+
+// segundo paso crear el modelo de datos --> se conectara con cada colección (carpeta)
+
+const Post = mongoose.model("Post", postSchema);
 
 // middlewares globales
 app.use(cors());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 app.use(express.json());
 
 // crear una api que realice un CRUD una app de gestión de publicaciones
 
-let posts = [] // base de datos simulada en memoria
-
 // ruta para listar u obtener todos los posts READ --> GET
-app.get('/posts', (req, res) => {
-    res.json(posts)
-})
+app.get("/posts", async (req, res) => {
+  try {
+    //intenta hacer esto
 
-app.get('/posts/:id', (req, res) => {   // se utiliza algún parámetro para indentificar el elemento
+    const posts = await Post.find(); // un método que ejecuta un código asíncrono se tarda un tiempo adicional
 
-    const { id } = req.params
-    const postId = parseInt(id)
+    res.status(200).json({
+      msg: "Posts obtenidos correctamente",
+      posts,
+      total: posts.length,
+    });
+  } catch (error) {
+    // captura el error
 
-    const post = posts.find(post => post.id === postId)
+    res.status(500).json({
+      msg: "Error en el servidor de la bases de datos al obtener los posts",
+      error,
+    });
+  }
+});
 
-    if(!post){
-        return res.status(404).json({
-            msg: 'Post no encontrado, intenta de nuevo'
-        })
+app.get("/posts/:id", async (req, res) => {
+  // se utiliza algún parámetro para indentificar el elemento
+
+  const { id } = req.params;
+
+  try {
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return res.status(404).json({
+        msg: "Post no encontrado, intenta de nuevo",
+      });
     }
 
     res.status(200).json({
-        msg: 'Post encontrado, intente de nuevo',
-        post
-    })
-
-})
+      msg: "Post encontrado",
+      data: {
+        title: post.title,
+        content: post.content,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      msg: "Error en el servidor de la bases de datos al obtener el post",
+      error,
+    });
+  }
+});
 
 // ruta para postear o agregar un nuevo post CREATE --> POST
-app.post('/posts', (req, res) => {
-    const { title, content } = req.body;
+app.post("/posts", async (req, res) => {
+  const { title, content } = req.body;
 
-    const newPost = {
-        id: posts.length + 1,
-        title,
-        content
-    }   
-
-    posts.push(newPost);
-    res.status(201).json({
-        msg: 'Post creado correctamente',
-        post: newPost
+  if (!title || !content) {
+    return res.status(400).json({
+      msg: "Campos requeridos",
     });
+  }
 
-})
-
+  try {
+    const newPost = new Post({
+      title,
+      content,
+    });
+    
+    await newPost.save();
+    
+    res.status(201).json({
+      msg: "Post creado correctamente",
+      post: newPost,
+    });
+  } catch (error) {
+    res.status(500).json({
+      msg: "Error en el servidor de la bases de datos al crear el post",
+      error,
+    });
+  }
+});
 
 // ruta para actualizar un post existente UPDATE --> PUT Se utiliza algún parámetro para indentificar el elemento
-app.put('/posts/:id', (req, res) => {
+app.put("/posts/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, content } = req.body;
 
-    console.log("Hola desde ele endpoint")
-    const { id } = req.params
-    const { title, content } = req.body;
+  if (!title || !content) {
+    return res.status(400).json({
+      msg: "Campos requeridos",
+    });
+  }
 
-    const postId = parseInt(id)
+  try {
+    const updatedPost = await Post.findByIdAndUpdate(id, {title, content})
 
-    const post = posts.find(post => post.id === postId)
-    
-    if(!post || id < 0){
-        return res.status(404).json({
-            msg: 'Post no encontrado, no se puede actualizar'
-        })
+    if(!updatedPost){
+      return res.status(404).json({
+        msg: "Post no encontrado, no se puede actualizar"
+      })
     }
 
-    posts[id - 1].title = title
-    posts[id - 1].content = content
     res.status(200).json({
-        msg: 'Post actualizado correctamente',
-        post: posts[id - 1]
+      msg: "Post actualizado correctamente",
+      post: updatedPost
+    })
+
+  } catch (error) {
+
+    res.status(500).json({
+      msg: "Error en el servidor de la bases de datos al actualizar el post",
+      error,
     });
-
-
-
-
-})
+  }
+  
+});
 
 // rutas para eliminar un post DELETE --> DELETE Se utiliza algún parámetro para indentificar el elemento
-app.delete('/posts/:id', (req, res) => {
+app.delete("/posts/:id", async (req, res) => {
+  const { id } = req.params;
+  
+  try {
 
-    const { id } = req.params
-    const postId = parseInt(id)
+const deletePost = await Post.findByIdAndDelete(id)
 
-    const post = posts.find(post => post.id === postId)
+if (!deletePost) {
+  return res.status(404).json({
+    msg: "Post no encontrado, no se puede eliminar"
+  })
+}
 
-    if(!post){
-        return res.status(404).json({
-            msg: 'Post no encontrado, no se puede eliminar'
-        })
-    }
-
-    posts = posts.filter(post => post.id !== postId)
-    res.status(200).json({
-        msg: 'Post eliminado correctamente',
-        posts
-    });
-
+res.status(200).json({
+  msg: "Post eliminado correctamente",
 })
+    
+    
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+        msg: "Error en el servidor de la bases de datos al eliminar el post",
+        error,
+    })
+  }
 
 
+});
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
